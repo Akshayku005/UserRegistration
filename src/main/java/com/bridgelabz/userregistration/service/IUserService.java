@@ -20,7 +20,7 @@ public interface IUserService {
 
     User updateRecordById(Integer id, UserDTO userDTO);
 
-    String forgotPassword(String email);
+    Object forgotPassword(String email);
 
     String resetPassword(String token, String password);
 

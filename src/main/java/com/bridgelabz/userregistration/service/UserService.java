@@ -9,6 +9,7 @@ import com.bridgelabz.userregistration.repository.UserRepository;
 import com.bridgelabz.userregistration.util.EmailSenderService;
 import com.bridgelabz.userregistration.util.TokenUtility;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -35,9 +36,7 @@ public class UserService implements IUserService {
         User newUser = new User(userDTO);
         userRepository.save(newUser);
         String token = util.createToken(newUser.getUserId());
-        mailService.sendEmail(newUser.getEmail(), "User Registration", " Hi " + newUser.getFirstName() +
-                " Your User Registered SuccessFully Completed. Please Click here to get data-> "
-                + "http://localhost:9010/user/verify/" + token);
+        mailService.sendEmail(newUser.getEmail(), "User Registration", " Hi " + newUser.getFirstName() + " Your User Registered SuccessFully Completed. Please Click here to get data-> " + "http://localhost:9010/user/verify/" + token);
         return token;
     }
 
@@ -48,8 +47,7 @@ public class UserService implements IUserService {
 
         if (user.isPresent()) {
             return user.toString();
-        } else
-            return "User not Verified!!";
+        } else return "User not Verified!!";
     }
 
     @Override
@@ -59,15 +57,15 @@ public class UserService implements IUserService {
         if (login.isPresent()) {
             String pass = login.get().getPassword();
             if (login.get().getPassword().equals(userLoginDTO.getPassword())) {
-                mailService.sendEmail(login.get().getEmail(), "User Registration",
-                        " Hi Welcome back " + login.get().getFirstName() +
-                                ". You have Successfully Loggedin. ");
+                mailService.sendEmail(login.get().getEmail(), "User Registration", " Hi Welcome back " + login.get().getFirstName() + ". You have Successfully Loggedin. ");
                 dto.setMessage("login successful ");
                 dto.setData(login.get());
                 return dto;
             } else {
+                mailService.sendEmail(login.get().getEmail(), "User Registration", " Hi " + login.get().getFirstName() + ". your password is wrong try again later! ");
                 dto.setMessage("Sorry! login is unsuccessful");
                 dto.setData("Wrong password");
+
                 return dto;
             }
         }
@@ -79,9 +77,8 @@ public class UserService implements IUserService {
     public List<User> getAllUsers() {
         List<User> getUsers = userRepository.findAll();
         if (getUsers.isEmpty()) {
-            throw new UserException("There is no User added yet");
-        } else
-            return getUsers;
+            throw new UserException(HttpStatus.NOT_FOUND, "There is no User added yet");
+        } else return getUsers;
     }
 
     @Override
@@ -89,13 +86,11 @@ public class UserService implements IUserService {
         int id = util.decodeToken(token);
         Optional<User> getUser = userRepository.findById(id);
         if (getUser.isPresent()) {
-            mailService.sendEmail(getUser.get().getEmail(), "User Registration", "Hi "
-                    + getUser.get().getFirstName() + " Please Click here to get data-> "
-                    + "http://localhost:9010/user/getAll/");
+            mailService.sendEmail(getUser.get().getEmail(), "User Registration", "Hi " + getUser.get().getFirstName() + " Please Click here to get data-> " + "http://localhost:9010/user/getAll/");
             return getUser;
 
         } else {
-            throw new UserException("Record for provided userId is not found");
+            throw new UserException(HttpStatus.NOT_FOUND, "Record for provided userId is not found");
         }
     }
 
@@ -106,18 +101,17 @@ public class UserService implements IUserService {
             User newUser = new User(updateUser.get().getUserId(), userDTO);
             userRepository.save(newUser);
             String token = util.createToken(newUser.getUserId());
-            mailService.sendEmail(newUser.getEmail(), "Welcome " + newUser.getFirstName(),
-                    "Your User Registration details updated successfully!!");
+            mailService.sendEmail(newUser.getEmail(), "Welcome " + newUser.getFirstName(), "Your User Registration details updated successfully!!");
             return newUser;
         }
-        throw new UserException("Book Details for email not found");
+        throw new UserException(HttpStatus.NOT_FOUND, "User Details for id not found");
     }
 
 
     @Override
-    public String forgotPassword(String email) {
+    public Object forgotPassword(String email) {
         Optional<User> userOptional = userRepository.findByEmailid(email);
-
+        String Token = userOptional.get().getToken();
         if (!userOptional.isPresent()) {
             return "Invalid email id.";
         } else {
@@ -127,12 +121,10 @@ public class UserService implements IUserService {
 
             user = userRepository.save(user);
 
-            mailService.sendEmail(userOptional.get().getEmail(), "Reset Password", "Hi " + userOptional.get().getFirstName() + "\n"
-                    + "You're receiving this email because you requested a password reset \n"
-                    + "Click the following link to change the password : " + "http://localhost:9010/user/reset-password?token=" + user.getToken());
+            mailService.sendEmail(userOptional.get().getEmail(), "Reset Password", "Hi " + userOptional.get().getFirstName() + "\n" + "You're receiving this email because you requested a password reset \n" + "Click the following link to change the password : " + "http://localhost:9010/user/resetPassword?token=" + user.getToken());
         }
 
-        return "Check Your Email To Change The Password";
+        return Token;
     }
 
     @Override
@@ -153,7 +145,7 @@ public class UserService implements IUserService {
         user.setPassword(password);
         user.setToken(null);
         user.setTokenCreationDate(null);
-
+        mailService.sendEmail(userOptional.get().getEmail(), "Welcome " + userOptional.get().getFirstName(), "Your User Registration Password reset successfully completed \n" + " You login by clicking this link " + " http://localhost:9010/user/login/");
         userRepository.save(user);
         return "Your password successfully updated.";
     }
@@ -170,7 +162,7 @@ public class UserService implements IUserService {
     public User getByIdAPI(Integer userId) {
         Optional<User> user = userRepository.findById(userId);
         if (user.isEmpty()) {
-            throw new UserException("There are no users with given id");
+            throw new UserException(HttpStatus.NOT_FOUND, "There are no users with given id");
         }
         return user.get();
     }
@@ -179,17 +171,15 @@ public class UserService implements IUserService {
     public Object deleteById(Integer id) {
         Optional<User> user = userRepository.findById(id);
         if (user.isEmpty()) {
-            throw new UserException("Invalid UserId..please input valid Id");
+            throw new UserException(HttpStatus.NOT_FOUND, "Invalid UserId..please input valid Id");
         }
         userRepository.deleteById(id);
-        mailService.sendEmail(user.get().getEmail(), "Hi" + user.get().getFirstName(),
-                "Your User Registration Account deleted successfully!!");
+        mailService.sendEmail(user.get().getEmail(), "Hi" + user.get().getFirstName(), "Your User Registration Account deleted successfully!!");
         return user.get();
     }
 
     private String generateToken() {
         StringBuilder token = new StringBuilder();
-        return token.append(UUID.randomUUID().toString())
-                .append(UUID.randomUUID().toString()).toString();
+        return token.append(UUID.randomUUID().toString()).append(UUID.randomUUID().toString()).toString();
     }
 }

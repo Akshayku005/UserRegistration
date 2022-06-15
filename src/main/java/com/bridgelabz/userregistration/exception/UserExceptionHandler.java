@@ -10,6 +10,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,6 +38,11 @@ public class UserExceptionHandler {
     public ResponseEntity<Object> handleHttpRequestMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
         ResponseDTO response = new ResponseDTO("Please change the http method type", ex.getMessage());
         return new ResponseEntity<Object>(response, HttpStatus.METHOD_NOT_ALLOWED);
+    }
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Object> handleResponseStatusException(ResponseStatusException ex) {
+        ResponseDTO response = new ResponseDTO("Please enter other Id. This Id not found", ex.getMessage());
+        return new ResponseEntity<Object>(response, HttpStatus.BAD_REQUEST);
     }
 
 }

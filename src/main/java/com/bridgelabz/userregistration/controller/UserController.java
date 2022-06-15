@@ -75,8 +75,8 @@ public class UserController {
     //Ability
     @PostMapping("/forgotPassword")
     public ResponseEntity<ResponseDTO> forgotPassword(@RequestParam String email){
-        String user = userService.forgotPassword(email);
-        ResponseDTO response = new ResponseDTO("Forgot password", user);
+       Object user = userService.forgotPassword(email);
+        ResponseDTO response = new ResponseDTO("Check your email to reset your password!!", user);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
