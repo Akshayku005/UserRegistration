@@ -34,9 +34,15 @@ public class UserService implements IUserService {
     @Override
     public String addUser(UserDTO userDTO) {
         User newUser = new User(userDTO);
+        Optional<User> userEmail= userRepository.findByEmailid(userDTO.getEmail());
+        if(userEmail.isPresent()){
+             throw new UserException(HttpStatus.BAD_REQUEST,"Email already exists, Please enter other email!!") ;
+        }else
         userRepository.save(newUser);
         String token = util.createToken(newUser.getUserId());
-        mailService.sendEmail(newUser.getEmail(), "User Registration", " Hi " + newUser.getFirstName() + " Your User Registered SuccessFully Completed. Please Click here to get data-> " + "http://localhost:9010/user/verify/" + token);
+        mailService.sendEmail(newUser.getEmail(), "User Registration", " Hi " + newUser.getFirstName() +
+                " Your User Registered SuccessFully Completed. Please Click here to get data-> " +
+                "http://localhost:9010/user/verify/" + token);
         return token;
     }
 
@@ -121,7 +127,9 @@ public class UserService implements IUserService {
 
             user = userRepository.save(user);
 
-            mailService.sendEmail(userOptional.get().getEmail(), "Reset Password", "Hi " + userOptional.get().getFirstName() + "\n" + "You're receiving this email because you requested a password reset \n" + "Click the following link to change the password : " + "http://localhost:9010/user/resetPassword?token=" + user.getToken());
+            mailService.sendEmail(userOptional.get().getEmail(), "Reset Password", "Hi "
+                    + userOptional.get().getFirstName() + "\n" +
+                    "You're receiving this email because you requested a password reset \n" + "Click the following link to change the password : " + "http://localhost:9010/user/resetPassword?token=" + user.getToken());
         }
 
         return Token;

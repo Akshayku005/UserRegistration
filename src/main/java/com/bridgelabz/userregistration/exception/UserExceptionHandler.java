@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 @ControllerAdvice
@@ -44,5 +45,9 @@ public class UserExceptionHandler {
         ResponseDTO response = new ResponseDTO("Please enter other Id. This Id not found", ex.getMessage());
         return new ResponseEntity<Object>(response, HttpStatus.BAD_REQUEST);
     }
-
+    @ExceptionHandler(NoSuchElementException.class)
+    public ResponseEntity<Object> NoSuchElementException(NoSuchElementException ex) {
+        ResponseDTO response = new ResponseDTO("Please check your email, no element found", ex.getMessage());
+        return new ResponseEntity<Object>(response, HttpStatus.BAD_REQUEST);
+    }
 }
